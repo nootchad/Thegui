@@ -1,25 +1,10 @@
-getgenv().NoAnticheatPresent = true
-getgenv().InterfaceName = "Twilight ESP + Image"
+-- ESP Script completo para GitHub
 
-local Twilight = loadstring(game:HttpGet("https://raw.nebulasoftworks.xyz/twilight"))()
-Twilight.Load()
-
+-- Servicios
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
 
-local imageUrls = {
-    "https://qzin7brpptfttivm.public.blob.vercel-storage.com/1000195915-fotor-bg-remover-20250921172037.png",
-    "https://qzin7brpptfttivm.public.blob.vercel-storage.com/1000195914-fotor-bg-remover-2025092117227.png"
-}
-local localFiles = {"image1.png","image2.png"}
-
-for i, url in ipairs(imageUrls) do
-    if not isfile(localFiles[i]) then
-        local success, content = pcall(function() return game:HttpGet(url) end)
-        if success then writefile(localFiles[i], content) end
-    end
-end
-
+-- Configuración global
 getgenv().ESPSettings = getgenv().ESPSettings or {
     ESPType = "Normal",
     Box = false,
@@ -30,12 +15,15 @@ getgenv().ESPSettings = getgenv().ESPSettings or {
 }
 
 local ESPPlayers = {}
+local Twilight = loadstring(game:HttpGet("https://raw.nebulasoftworks.xyz/twilight"))()
+Twilight.Load()
 
+-- Función para agregar imagen FamilyGuy
 local function addESPImage(player)
     if ESPPlayers[player] then return end
-    local character = player.Character
-    if not character then return end
-    local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
+    local char = player.Character
+    if not char then return end
+    local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
     if not torso then return end
     if getgenv().ESPSettings.ESPType ~= "FamilyGuy" then return end
 
@@ -50,13 +38,14 @@ local function addESPImage(player)
     local imgLabel = Instance.new("ImageLabel")
     imgLabel.Size = UDim2.new(1,0,1,0)
     imgLabel.BackgroundTransparency = 1
-    imgLabel.Image = getcustomasset(localFiles[1])
+    imgLabel.Image = getcustomasset("image1.png")
     imgLabel.ScaleType = Enum.ScaleType.Fit
     imgLabel.Parent = billboard
 
     ESPPlayers[player] = billboard
 end
 
+-- Función para remover imagen FamilyGuy
 local function removeESPImage(player)
     if ESPPlayers[player] then
         ESPPlayers[player]:Destroy()
@@ -64,6 +53,7 @@ local function removeESPImage(player)
     end
 end
 
+-- Conecta eventos de respawn de jugador
 local function updatePlayerESP(player)
     player.CharacterAdded:Connect(function()
         task.wait(0.5)
@@ -75,17 +65,20 @@ local function updatePlayerESP(player)
     end)
 end
 
+-- Inicializa ESP para todos los jugadores actuales
 for _, player in ipairs(Players:GetPlayers()) do
-    if player ~= LocalPlayer then
+    if player ~= Players.LocalPlayer then
         updatePlayerESP(player)
+        task.wait(0.5)
         if getgenv().ESPSettings.ESPType == "FamilyGuy" then
             addESPImage(player)
         end
     end
 end
 
+-- Evento para jugadores que se unan
 Players.PlayerAdded:Connect(function(player)
-    if player ~= LocalPlayer then
+    if player ~= Players.LocalPlayer then
         updatePlayerESP(player)
         task.wait(0.5)
         if getgenv().ESPSettings.ESPType == "FamilyGuy" then
@@ -94,14 +87,8 @@ Players.PlayerAdded:Connect(function(player)
     end
 end)
 
-Twilight.settings.boxEnabled = getgenv().ESPSettings.Box
-Twilight.settings.outlineBoxEnabled = getgenv().ESPSettings.Outline
-Twilight.settings.healthBarEnabled = getgenv().ESPSettings.HealthBar
-Twilight.settings.tracersEnabled = getgenv().ESPSettings.Tracers
-Twilight.settings.chamsEnabled = getgenv().ESPSettings.Chams
-Twilight:EnablePlayerESP()
-
-game:GetService("RunService").RenderStepped:Connect(function()
+-- Actualiza ESP cada frame
+RunService.RenderStepped:Connect(function()
     Twilight.settings.boxEnabled = getgenv().ESPSettings.Box
     Twilight.settings.outlineBoxEnabled = getgenv().ESPSettings.Outline
     Twilight.settings.healthBarEnabled = getgenv().ESPSettings.HealthBar
@@ -109,16 +96,7 @@ game:GetService("RunService").RenderStepped:Connect(function()
     Twilight.settings.chamsEnabled = getgenv().ESPSettings.Chams
 
     for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
-            if getgenv().ESPSettings.ESPType == "FamilyGuy" then
-                addESPImage(player)
-            else
-                removeESPImage(player)
-            end
-        end
-    end
-end)    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
+        if player ~= Players.LocalPlayer and player.Character then
             if getgenv().ESPSettings.ESPType == "FamilyGuy" then
                 addESPImage(player)
             else
@@ -127,3 +105,24 @@ end)    for _, player in ipairs(Players:GetPlayers()) do
         end
     end
 end)
+
+-- Integración con Luna GUI
+if not TabPVP then return end -- Asegura que TabPVP exista
+
+local PVPSection = TabPVP:CreateSection("ESP Settings")
+
+PVPSection:CreateButton({
+    Name="Family Guy ESP",
+    Callback=function() getgenv().ESPSettings.ESPType="FamilyGuy" end
+})
+
+PVPSection:CreateButton({
+    Name="Normal ESP",
+    Callback=function() getgenv().ESPSettings.ESPType="Normal" end
+})
+
+PVPSection:CreateToggle({Name="Box ESP",CurrentValue=false,Callback=function(v) getgenv().ESPSettings.Box=v end})
+PVPSection:CreateToggle({Name="Outline ESP",CurrentValue=false,Callback=function(v) getgenv().ESPSettings.Outline=v end})
+PVPSection:CreateToggle({Name="Health Bar",CurrentValue=false,Callback=function(v) getgenv().ESPSettings.HealthBar=v end})
+PVPSection:CreateToggle({Name="Tracers",CurrentValue=false,Callback=function(v) getgenv().ESPSettings.Tracers=v end})
+PVPSection:CreateToggle({Name="Chams",CurrentValue=false,Callback=function(v) getgenv().ESPSettings.Chams=v end})
