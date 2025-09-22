@@ -1,30 +1,54 @@
--- ESP Backend para escuchar GUI
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+local Workspace = game:GetService("Workspace")
+local folderName = "Hesiz Fortline"
+local configFolder = folderName.."/config"
+local configFile = configFolder.."/esp.json"
+
+if not isfolder(folderName) then makefolder(folderName) end
+if not isfolder(configFolder) then makefolder(configFolder) end
+if not isfile(configFile) then
+    writefile(configFile, HttpService:JSONEncode({
+        ESPType = "Normal",
+        Box = false,
+        Outline = false,
+        HealthBar = false,
+        Tracers = false,
+        Chams = false
+    }))
+end
+
+local function loadConfig()
+    local content = readfile(configFile)
+    local ok, data = pcall(HttpService.JSONDecode, HttpService, content)
+    if ok and type(data) == "table" then
+        return data
+    end
+    return {
+        ESPType = "Normal",
+        Box = false,
+        Outline = false,
+        HealthBar = false,
+        Tracers = false,
+        Chams = false
+    }
+end
+
+local ESPSettings = loadConfig()
+getgenv().ESPSettings = ESPSettings
+
 local ESPPlayers = {}
-
-getgenv().ESPSettings = getgenv().ESPSettings or {
-    ESPType = "Normal",
-    Box = false,
-    Outline = false,
-    HealthBar = false,
-    Tracers = false,
-    Chams = false
-}
-
--- Carga Twilight (ESP base)
 local Twilight = loadstring(game:HttpGet("https://raw.nebulasoftworks.xyz/twilight"))()
 Twilight.Load()
 
--- Funciones internas
 local function addESPImage(player)
     if ESPPlayers[player] then return end
     local char = player.Character
     if not char then return end
     local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
     if not torso then return end
-    if getgenv().ESPSettings.ESPType ~= "FamilyGuy" then return end
-
+    if ESPSettings.ESPType ~= "FamilyGuy" then return end
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "ESPGui"
     billboard.Size = UDim2.new(0,60,0,60)
@@ -32,14 +56,12 @@ local function addESPImage(player)
     billboard.Adornee = torso
     billboard.AlwaysOnTop = true
     billboard.Parent = torso
-
     local imgLabel = Instance.new("ImageLabel")
     imgLabel.Size = UDim2.new(1,0,1,0)
     imgLabel.BackgroundTransparency = 1
     imgLabel.Image = getcustomasset("image1.png")
     imgLabel.ScaleType = Enum.ScaleType.Fit
     imgLabel.Parent = billboard
-
     ESPPlayers[player] = billboard
 end
 
@@ -51,51 +73,43 @@ local function removeESPImage(player)
 end
 
 local function updatePlayerESP(player)
-    player.CharacterAdded:Connect(function(char)
+    player.CharacterAdded:Connect(function()
         task.wait(0.5)
-        if getgenv().ESPSettings.ESPType == "FamilyGuy" then
+        if ESPSettings.ESPType == "FamilyGuy" then
             addESPImage(player)
         else
             removeESPImage(player)
         end
     end)
-
-    if player.Character then
-        task.wait(0.5)
-        if getgenv().ESPSettings.ESPType == "FamilyGuy" then addESPImage(player) end
-    end
 end
 
--- Inicializa ESP para todos los jugadores existentes
 for _, player in ipairs(Players:GetPlayers()) do
     if player ~= Players.LocalPlayer then
         updatePlayerESP(player)
         task.wait(0.5)
-        if getgenv().ESPSettings.ESPType == "FamilyGuy" then addESPImage(player) end
+        if ESPSettings.ESPType == "FamilyGuy" then addESPImage(player) end
     end
 end
 
--- Detecta nuevos jugadores
 Players.PlayerAdded:Connect(function(player)
     if player ~= Players.LocalPlayer then
         updatePlayerESP(player)
         task.wait(0.5)
-        if getgenv().ESPSettings.ESPType == "FamilyGuy" then addESPImage(player) end
+        if ESPSettings.ESPType == "FamilyGuy" then addESPImage(player) end
     end
 end)
 
--- Actualiza Twilight y ESP cada frame
 RunService.RenderStepped:Connect(function()
-    if not Twilight or not Twilight.settings then return end
-    Twilight.settings.boxEnabled = getgenv().ESPSettings.Box
-    Twilight.settings.outlineBoxEnabled = getgenv().ESPSettings.Outline
-    Twilight.settings.healthBarEnabled = getgenv().ESPSettings.HealthBar
-    Twilight.settings.tracersEnabled = getgenv().ESPSettings.Tracers
-    Twilight.settings.chamsEnabled = getgenv().ESPSettings.Chams
-
+    local config = loadConfig()
+    ESPSettings = config
+    Twilight.settings.boxEnabled = config.Box
+    Twilight.settings.outlineBoxEnabled = config.Outline
+    Twilight.settings.healthBarEnabled = config.HealthBar
+    Twilight.settings.tracersEnabled = config.Tracers
+    Twilight.settings.chamsEnabled = config.Chams
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= Players.LocalPlayer and player.Character then
-            if getgenv().ESPSettings.ESPType == "FamilyGuy" then
+            if config.ESPType == "FamilyGuy" then
                 addESPImage(player)
             else
                 removeESPImage(player)
