@@ -1,12 +1,13 @@
--- ESP Script completo para GitHub
+-- ESP Backend para Fortline
+-- No crea GUI, solo aplica la configuración de getgenv().ESPSettings
 
--- Servicios
+-- Servidores
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
--- Configuración global
+-- Configuración ESP global
 getgenv().ESPSettings = getgenv().ESPSettings or {
-    ESPType = "Normal",
+    ESPType = "Normal", -- "Normal" o "FamilyGuy"
     Box = false,
     Outline = false,
     HealthBar = false,
@@ -15,6 +16,8 @@ getgenv().ESPSettings = getgenv().ESPSettings or {
 }
 
 local ESPPlayers = {}
+
+-- Cargar Twilight (ESP normal)
 local Twilight = loadstring(game:HttpGet("https://raw.nebulasoftworks.xyz/twilight"))()
 Twilight.Load()
 
@@ -45,7 +48,6 @@ local function addESPImage(player)
     ESPPlayers[player] = billboard
 end
 
--- Función para remover imagen FamilyGuy
 local function removeESPImage(player)
     if ESPPlayers[player] then
         ESPPlayers[player]:Destroy()
@@ -53,7 +55,6 @@ local function removeESPImage(player)
     end
 end
 
--- Conecta eventos de respawn de jugador
 local function updatePlayerESP(player)
     player.CharacterAdded:Connect(function()
         task.wait(0.5)
@@ -65,29 +66,25 @@ local function updatePlayerESP(player)
     end)
 end
 
--- Inicializa ESP para todos los jugadores actuales
+-- Inicializar jugadores actuales
 for _, player in ipairs(Players:GetPlayers()) do
     if player ~= Players.LocalPlayer then
         updatePlayerESP(player)
         task.wait(0.5)
-        if getgenv().ESPSettings.ESPType == "FamilyGuy" then
-            addESPImage(player)
-        end
+        if getgenv().ESPSettings.ESPType == "FamilyGuy" then addESPImage(player) end
     end
 end
 
--- Evento para jugadores que se unan
+-- Conectar nuevos jugadores
 Players.PlayerAdded:Connect(function(player)
     if player ~= Players.LocalPlayer then
         updatePlayerESP(player)
         task.wait(0.5)
-        if getgenv().ESPSettings.ESPType == "FamilyGuy" then
-            addESPImage(player)
-        end
+        if getgenv().ESPSettings.ESPType == "FamilyGuy" then addESPImage(player) end
     end
 end)
 
--- Actualiza ESP cada frame
+-- Actualizar ESP cada frame según configuración
 RunService.RenderStepped:Connect(function()
     Twilight.settings.boxEnabled = getgenv().ESPSettings.Box
     Twilight.settings.outlineBoxEnabled = getgenv().ESPSettings.Outline
@@ -105,24 +102,3 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
-
--- Integración con Luna GUI
-if not TabPVP then return end -- Asegura que TabPVP exista
-
-local PVPSection = TabPVP:CreateSection("ESP Settings")
-
-PVPSection:CreateButton({
-    Name="Family Guy ESP",
-    Callback=function() getgenv().ESPSettings.ESPType="FamilyGuy" end
-})
-
-PVPSection:CreateButton({
-    Name="Normal ESP",
-    Callback=function() getgenv().ESPSettings.ESPType="Normal" end
-})
-
-PVPSection:CreateToggle({Name="Box ESP",CurrentValue=false,Callback=function(v) getgenv().ESPSettings.Box=v end})
-PVPSection:CreateToggle({Name="Outline ESP",CurrentValue=false,Callback=function(v) getgenv().ESPSettings.Outline=v end})
-PVPSection:CreateToggle({Name="Health Bar",CurrentValue=false,Callback=function(v) getgenv().ESPSettings.HealthBar=v end})
-PVPSection:CreateToggle({Name="Tracers",CurrentValue=false,Callback=function(v) getgenv().ESPSettings.Tracers=v end})
-PVPSection:CreateToggle({Name="Chams",CurrentValue=false,Callback=function(v) getgenv().ESPSettings.Chams=v end})
