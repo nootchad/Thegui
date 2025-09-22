@@ -1,13 +1,10 @@
--- ESP Backend para Fortline
--- No crea GUI, solo aplica la configuración de getgenv().ESPSettings
-
--- Servidores
+-- ESP Backend para escuchar GUI
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local ESPPlayers = {}
 
--- Configuración ESP global
 getgenv().ESPSettings = getgenv().ESPSettings or {
-    ESPType = "Normal", -- "Normal" o "FamilyGuy"
+    ESPType = "Normal",
     Box = false,
     Outline = false,
     HealthBar = false,
@@ -15,13 +12,11 @@ getgenv().ESPSettings = getgenv().ESPSettings or {
     Chams = false
 }
 
-local ESPPlayers = {}
-
--- Cargar Twilight (ESP normal)
+-- Carga Twilight (ESP base)
 local Twilight = loadstring(game:HttpGet("https://raw.nebulasoftworks.xyz/twilight"))()
 Twilight.Load()
 
--- Función para agregar imagen FamilyGuy
+-- Funciones internas
 local function addESPImage(player)
     if ESPPlayers[player] then return end
     local char = player.Character
@@ -56,7 +51,7 @@ local function removeESPImage(player)
 end
 
 local function updatePlayerESP(player)
-    player.CharacterAdded:Connect(function()
+    player.CharacterAdded:Connect(function(char)
         task.wait(0.5)
         if getgenv().ESPSettings.ESPType == "FamilyGuy" then
             addESPImage(player)
@@ -64,9 +59,14 @@ local function updatePlayerESP(player)
             removeESPImage(player)
         end
     end)
+
+    if player.Character then
+        task.wait(0.5)
+        if getgenv().ESPSettings.ESPType == "FamilyGuy" then addESPImage(player) end
+    end
 end
 
--- Inicializar jugadores actuales
+-- Inicializa ESP para todos los jugadores existentes
 for _, player in ipairs(Players:GetPlayers()) do
     if player ~= Players.LocalPlayer then
         updatePlayerESP(player)
@@ -75,7 +75,7 @@ for _, player in ipairs(Players:GetPlayers()) do
     end
 end
 
--- Conectar nuevos jugadores
+-- Detecta nuevos jugadores
 Players.PlayerAdded:Connect(function(player)
     if player ~= Players.LocalPlayer then
         updatePlayerESP(player)
@@ -84,8 +84,9 @@ Players.PlayerAdded:Connect(function(player)
     end
 end)
 
--- Actualizar ESP cada frame según configuración
+-- Actualiza Twilight y ESP cada frame
 RunService.RenderStepped:Connect(function()
+    if not Twilight or not Twilight.settings then return end
     Twilight.settings.boxEnabled = getgenv().ESPSettings.Box
     Twilight.settings.outlineBoxEnabled = getgenv().ESPSettings.Outline
     Twilight.settings.healthBarEnabled = getgenv().ESPSettings.HealthBar
