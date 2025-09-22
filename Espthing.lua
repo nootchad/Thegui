@@ -16,28 +16,29 @@ local localFiles = {"image1.png","image2.png"}
 for i, url in ipairs(imageUrls) do
     if not isfile(localFiles[i]) then
         local success, content = pcall(function() return game:HttpGet(url) end)
-        if success then
-            writefile(localFiles[i], content)
-        end
+        if success then writefile(localFiles[i], content) end
     end
 end
 
 getgenv().ESPSettings = getgenv().ESPSettings or {
-    TypeESP = "Normal",
-    BoxEnabled = false,
-    OutlineBoxEnabled = false,
-    HealthBarEnabled = false,
-    TracersEnabled = false,
-    ChamsEnabled = false
+    ESPType = "Normal",
+    Box = false,
+    Outline = false,
+    HealthBar = false,
+    Tracers = false,
+    Chams = false
 }
 
+local ESPPlayers = {}
+
 local function addESPImage(player)
+    if ESPPlayers[player] then return end
     local character = player.Character
     if not character then return end
     local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
     if not torso then return end
-    if torso:FindFirstChild("ESPGui") then torso.ESPGui:Destroy() end
-    if getgenv().ESPSettings.TypeESP ~= "FamilyGuy" then return end
+
+    if getgenv().ESPSettings.ESPType ~= "FamilyGuy" then return end
 
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "ESPGui"
@@ -53,26 +54,68 @@ local function addESPImage(player)
     imgLabel.Image = getcustomasset(localFiles[1])
     imgLabel.ScaleType = Enum.ScaleType.Fit
     imgLabel.Parent = billboard
+
+    ESPPlayers[player] = billboard
 end
 
-local function UpdateESP()
-    Twilight.settings.boxEnabled = getgenv().ESPSettings.BoxEnabled
-    Twilight.settings.outlineBoxEnabled = getgenv().ESPSettings.OutlineBoxEnabled
-    Twilight.settings.healthBarEnabled = getgenv().ESPSettings.HealthBarEnabled
-    Twilight.settings.tracersEnabled = getgenv().ESPSettings.TracersEnabled
-    Twilight.settings.chamsEnabled = getgenv().ESPSettings.ChamsEnabled
-    Twilight:EnablePlayerESP()
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
+local function removeESPImage(player)
+    if ESPPlayers[player] then
+        ESPPlayers[player]:Destroy()
+        ESPPlayers[player] = nil
+    end
+end
+
+local function updatePlayerESP(player)
+    player.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        if getgenv().ESPSettings.ESPType == "FamilyGuy" then
+            addESPImage(player)
+        else
+            removeESPImage(player)
+        end
+    end)
+end
+
+for _, player in ipairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer then
+        updatePlayerESP(player)
+        if getgenv().ESPSettings.ESPType == "FamilyGuy" then
             addESPImage(player)
         end
     end
 end
 
 Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function()
-        addESPImage(player)
-    end)
+    if player ~= LocalPlayer then
+        updatePlayerESP(player)
+        task.wait(0.5)
+        if getgenv().ESPSettings.ESPType == "FamilyGuy" then
+            addESPImage(player)
+        end
+    end
 end)
 
-UpdateESP()
+Twilight.settings.boxEnabled = getgenv().ESPSettings.Box
+Twilight.settings.outlineBoxEnabled = getgenv().ESPSettings.Outline
+Twilight.settings.healthBarEnabled = getgenv().ESPSettings.HealthBar
+Twilight.settings.tracersEnabled = getgenv().ESPSettings.Tracers
+Twilight.settings.chamsEnabled = getgenv().ESPSettings.Chams
+Twilight:EnablePlayerESP()
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    Twilight.settings.boxEnabled = getgenv().ESPSettings.Box
+    Twilight.settings.outlineBoxEnabled = getgenv().ESPSettings.Outline
+    Twilight.settings.healthBarEnabled = getgenv().ESPSettings.HealthBar
+    Twilight.settings.tracersEnabled = getgenv().ESPSettings.Tracers
+    Twilight.settings.chamsEnabled = getgenv().ESPSettings.Chams
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            if getgenv().ESPSettings.ESPType == "FamilyGuy" then
+                addESPImage(player)
+            else
+                removeESPImage(player)
+            end
+        end
+    end
+end)
