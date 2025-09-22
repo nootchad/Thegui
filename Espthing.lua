@@ -1,15 +1,14 @@
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local HttpService = game:GetService("HttpService")
-local Workspace = game:GetService("Workspace")
-local folderName = "Hesiz Fortline"
-local configFolder = folderName.."/config"
-local configFile = configFolder.."/esp.json"
+local folderName = "Hesiz Fortile"
+local espConfigFile = folderName.."/config/esp.json"
 
+-- Crea la carpeta y el archivo si no existen
 if not isfolder(folderName) then makefolder(folderName) end
-if not isfolder(configFolder) then makefolder(configFolder) end
-if not isfile(configFile) then
-    writefile(configFile, HttpService:JSONEncode({
+if not isfolder(folderName.."/config") then makefolder(folderName.."/config") end
+if not isfile(espConfigFile) then
+    writefile(espConfigFile, HttpService:JSONEncode({
         ESPType = "Normal",
         Box = false,
         Outline = false,
@@ -19,28 +18,11 @@ if not isfile(configFile) then
     }))
 end
 
-local function loadConfig()
-    local content = readfile(configFile)
-    local ok, data = pcall(HttpService.JSONDecode, HttpService, content)
-    if ok and type(data) == "table" then
-        return data
-    end
-    return {
-        ESPType = "Normal",
-        Box = false,
-        Outline = false,
-        HealthBar = false,
-        Tracers = false,
-        Chams = false
-    }
-end
-
-local ESPSettings = loadConfig()
-getgenv().ESPSettings = ESPSettings
-
-local ESPPlayers = {}
+-- Twilight ESP
 local Twilight = loadstring(game:HttpGet("https://raw.nebulasoftworks.xyz/twilight"))()
 Twilight.Load()
+
+local ESPPlayers = {}
 
 local function addESPImage(player)
     if ESPPlayers[player] then return end
@@ -48,7 +30,6 @@ local function addESPImage(player)
     if not char then return end
     local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
     if not torso then return end
-    if ESPSettings.ESPType ~= "FamilyGuy" then return end
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "ESPGui"
     billboard.Size = UDim2.new(0,60,0,60)
@@ -75,11 +56,8 @@ end
 local function updatePlayerESP(player)
     player.CharacterAdded:Connect(function()
         task.wait(0.5)
-        if ESPSettings.ESPType == "FamilyGuy" then
-            addESPImage(player)
-        else
-            removeESPImage(player)
-        end
+        local cfg = HttpService:JSONDecode(readfile(espConfigFile))
+        if cfg.ESPType == "FamilyGuy" then addESPImage(player) else removeESPImage(player) end
     end)
 end
 
@@ -87,7 +65,8 @@ for _, player in ipairs(Players:GetPlayers()) do
     if player ~= Players.LocalPlayer then
         updatePlayerESP(player)
         task.wait(0.5)
-        if ESPSettings.ESPType == "FamilyGuy" then addESPImage(player) end
+        local cfg = HttpService:JSONDecode(readfile(espConfigFile))
+        if cfg.ESPType == "FamilyGuy" then addESPImage(player) end
     end
 end
 
@@ -95,25 +74,23 @@ Players.PlayerAdded:Connect(function(player)
     if player ~= Players.LocalPlayer then
         updatePlayerESP(player)
         task.wait(0.5)
-        if ESPSettings.ESPType == "FamilyGuy" then addESPImage(player) end
+        local cfg = HttpService:JSONDecode(readfile(espConfigFile))
+        if cfg.ESPType == "FamilyGuy" then addESPImage(player) end
     end
 end)
 
+-- Actualiza ESP cada frame leyendo esp.json
 RunService.RenderStepped:Connect(function()
-    local config = loadConfig()
-    ESPSettings = config
-    Twilight.settings.boxEnabled = config.Box
-    Twilight.settings.outlineBoxEnabled = config.Outline
-    Twilight.settings.healthBarEnabled = config.HealthBar
-    Twilight.settings.tracersEnabled = config.Tracers
-    Twilight.settings.chamsEnabled = config.Chams
+    local cfg = HttpService:JSONDecode(readfile(espConfigFile))
+    Twilight.settings.boxEnabled = cfg.Box
+    Twilight.settings.outlineBoxEnabled = cfg.Outline
+    Twilight.settings.healthBarEnabled = cfg.HealthBar
+    Twilight.settings.tracersEnabled = cfg.Tracers
+    Twilight.settings.chamsEnabled = cfg.Chams
+
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= Players.LocalPlayer and player.Character then
-            if config.ESPType == "FamilyGuy" then
-                addESPImage(player)
-            else
-                removeESPImage(player)
-            end
+            if cfg.ESPType == "FamilyGuy" then addESPImage(player) else removeESPImage(player) end
         end
     end
 end)
