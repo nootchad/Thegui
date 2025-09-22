@@ -37,7 +37,6 @@ local function addESPImage(player)
     if not character then return end
     local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
     if not torso then return end
-
     if getgenv().ESPSettings.ESPType ~= "FamilyGuy" then return end
 
     local billboard = Instance.new("BillboardGui")
@@ -110,6 +109,15 @@ game:GetService("RunService").RenderStepped:Connect(function()
     Twilight.settings.chamsEnabled = getgenv().ESPSettings.Chams
 
     for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            if getgenv().ESPSettings.ESPType == "FamilyGuy" then
+                addESPImage(player)
+            else
+                removeESPImage(player)
+            end
+        end
+    end
+end)    for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
             if getgenv().ESPSettings.ESPType == "FamilyGuy" then
                 addESPImage(player)
